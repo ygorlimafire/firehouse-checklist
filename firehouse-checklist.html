@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Fire House Bangu — Checklist</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f0f0f;
+    --bg2: #1a1a1a;
+    --bg3: #242424;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --text2: #8a8580;
+    --text3: #4a4845;
+    --accent: #e8521a;
+    --accent2: #ff7043;
+    --green: #2ecc8a;
+    --amber: #f0a832;
+    --blue: #4a9eff;
+    --rad: 10px;
+    --rad-lg: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  .app { max-width: 480px; margin: 0 auto; padding: 0 0 80px; }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* LOGIN */
+  .login-wrap {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+  .login-logo {
+    margin-bottom: 2.5rem;
+    text-align: center;
+  }
+  .login-logo .flame { font-size: 42px; margin-bottom: 8px; }
+  .login-logo h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+  .login-logo p { font-size: 13px; color: var(--text2); margin-top: 3px; }
+  .login-card {
+    width: 100%;
+    max-width: 340px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--rad-lg);
+    padding: 1.5rem;
+  }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: block; letter-spacing: 0.04em; text-transform: uppercase; }
+  .form-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--rad);
+    padding: 10px 13px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--border2); }
+  .btn-primary {
+    width: 100%;
+    padding: 11px;
+    border-radius: var(--rad);
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s, transform 0.1s;
+    margin-top: 4px;
+  }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:active { transform: scale(0.98); }
+  .err { font-size: 12px; color: #e24b4a; margin-top: 10px; text-align: center; min-height: 16px; }
+  .link-btn {
+    background: none; border: none; color: var(--text2);
+    font-size: 12px; cursor: pointer; text-decoration: underline;
+    display: block; margin: 14px auto 0; text-align: center;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .link-btn:hover { color: var(--text); }
+
+  /* TOPBAR */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar-left h2 { font-size: 16px; font-weight: 600; }
+  .topbar-left p { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--rad); padding: 6px 10px;
+    color: var(--text2); font-size: 12px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+  }
+  .icon-btn:hover { border-color: var(--border2); color: var(--text); }
+  .badge-user {
+    font-size: 11px; padding: 4px 10px;
+    border-radius: 20px; background: var(--bg3);
+    border: 1px solid var(--border); color: var(--text2);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* CONTENT PADDING */
+  .content { padding: 16px; }
+
+  /* TURNO TABS */
+  .turno-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .turno-tab {
+    flex: 1; padding: 8px 4px; border-radius: var(--rad);
+    border: 1px solid var(--border); font-size: 12px;
+    cursor: pointer; background: transparent; color: var(--text2);
+    text-align: center; transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+  }
+  .turno-tab.active { background: var(--bg2); color: var(--text); border-color: var(--border2); }
+  .turno-tab .dot { width: 6px; height: 6px; border-radius: 50%; margin: 0 auto 4px; }
+  .dot-ab { background: var(--blue); }
+  .dot-op { background: var(--amber); }
+  .dot-fe { background: var(--accent); }
+
+  /* PROGRESS */
+  .progress-wrap { margin-bottom: 20px; }
+  .progress-info { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 7px; }
+  .progress-pct { font-family: 'DM Mono', monospace; font-weight: 500; }
+  .progress-bar { height: 4px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 4px; transition: width 0.4s ease; }
+  .progress-fill.warn { background: var(--amber); }
+  .progress-fill.done-all { background: var(--green); }
+
+  /* TASKS */
+  .task-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .task-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--rad-lg); padding: 13px 14px;
+    transition: opacity 0.2s, border-color 0.2s;
+  }
+  .task-card.done { opacity: 0.55; border-color: transparent; }
+  .task-card.done { border-left: 3px solid var(--green); }
+  .task-header { display: flex; align-items: flex-start; gap: 10px; }
+  .task-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1.5px solid var(--border2); cursor: pointer;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    margin-top: 1px; transition: all 0.2s; background: transparent;
+    font-size: 12px; color: transparent;
+  }
+  .task-check.checked { background: var(--green); border-color: var(--green); color: white; }
+  .task-info { flex: 1; }
+  .task-name { font-size: 14px; color: var(--text); line-height: 1.4; font-weight: 500; }
+  .task-name.done-text { text-decoration: line-through; color: var(--text2); font-weight: 400; }
+  .task-done-by { font-size: 11px; color: var(--green); margin-top: 4px; font-family: 'DM Mono', monospace; }
+  .task-badge {
+    font-size: 10px; padding: 2px 7px;
+    border-radius: 20px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    display: inline-block; margin-top: 5px;
+  }
+  .b-abertura { background: rgba(74,158,255,0.12); color: var(--blue); }
+  .b-operacao { background: rgba(240,168,50,0.12); color: var(--amber); }
+  .b-fechamento { background: rgba(232,82,26,0.12); color: var(--accent2); }
+  .b-extra { background: rgba(46,204,138,0.12); color: var(--green); }
+
+  /* PHOTO */
+  .photo-area { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .photo-label { font-size: 11px; color: var(--text3); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .photo-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: var(--rad); display: block; }
+  .photo-btn {
+    font-size: 13px; padding: 8px 12px;
+    border: 1px dashed var(--border2); border-radius: var(--rad);
+    background: transparent; color: var(--text2); cursor: pointer;
+    width: 100%; text-align: center; font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s; display: block;
+  }
+  .photo-btn:hover { background: var(--bg3); color: var(--text); }
+  .photo-uploading { font-size: 12px; color: var(--text2); text-align: center; padding: 8px; }
+
+  /* ADD EXTRA */
+  .add-extra { display: flex; gap: 8px; margin-bottom: 16px; }
+  .add-extra input {
+    flex: 1; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--rad); padding: 9px 12px; font-size: 13px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; outline: none;
+  }
+  .add-extra input:focus { border-color: var(--border2); }
+  .add-extra button {
+    padding: 9px 14px; border-radius: var(--rad);
+    border: 1px solid var(--border); background: transparent;
+    font-size: 13px; cursor: pointer; color: var(--text2);
+    font-family: 'DM Sans', sans-serif; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .add-extra button:hover { color: var(--text); border-color: var(--border2); }
+
+  /* STATS GRID */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+  .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rad); padding: 12px 13px; }
+  .stat-n { font-size: 24px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .stat-l { font-size: 11px; color: var(--text2); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat-n.green { color: var(--green); }
+  .stat-n.amber { color: var(--amber); }
+
+  /* REL */
+  .rel-section { margin-bottom: 20px; }
+  .rel-section-title {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+  .rel-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .rel-item:last-child { border-bottom: none; }
+  .rel-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-ok { background: var(--green); }
+  .dot-no { background: var(--bg3); border: 1px solid var(--border2); }
+  .rel-name { flex: 1; font-size: 13px; }
+  .rel-who { font-size: 11px; color: var(--text2); font-family: 'DM Mono', monospace; }
+  .rel-time { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .rel-thumb { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+
+  /* ADMIN */
+  .section-title {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 10px; margin-top: 20px;
+  }
+  .section-title:first-child { margin-top: 0; }
+  .user-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 13px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: var(--rad);
+    margin-bottom: 6px;
+  }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .av-g { background: rgba(74,158,255,0.15); color: var(--blue); }
+  .av-o { background: rgba(240,168,50,0.15); color: var(--amber); }
+  .av-c { background: rgba(46,204,138,0.15); color: var(--green); }
+  .user-name-disp { flex: 1; font-size: 13px; }
+  .role-badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;
+  }
+  .r-gerente { background: rgba(74,158,255,0.12); color: var(--blue); }
+  .r-operador { background: rgba(240,168,50,0.12); color: var(--amber); }
+  .r-caixa { background: rgba(46,204,138,0.12); color: var(--green); }
+  .del-btn {
+    background: none; border: none; color: var(--text3);
+    cursor: pointer; font-size: 18px; line-height: 1; padding: 0 2px;
+    transition: color 0.15s;
+  }
+  .del-btn:hover { color: #e24b4a; }
+  .inline-form { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .inline-form .form-input { flex: 1; min-width: 100px; padding: 8px 10px; font-size: 13px; }
+  .btn-sec {
+    width: 100%; padding: 10px; border-radius: var(--rad);
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text2); font-size: 13px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; margin-top: 8px;
+    transition: all 0.15s;
+  }
+  .btn-sec:hover { border-color: var(--border2); color: var(--text); }
+
+  /* LOADING */
+  .loading {
+    min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; flex-direction: column; gap: 12px;
+  }
+  .spinner {
+    width: 28px; height: 28px; border: 2px solid var(--border2);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { font-size: 13px; color: var(--text2); }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 2.5rem 1rem; color: var(--text3); font-size: 13px; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: var(--rad); padding: 10px 18px;
+    font-size: 13px; color: var(--text); z-index: 100;
+    opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  select.form-input { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- LOADING -->
+  <div class="screen active" id="screen-loading">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Carregando...</p>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="screen" id="screen-login">
+    <div class="login-wrap">
+      <div class="login-logo">
+        <div class="flame">🔥</div>
+        <h1>Fire House</h1>
+        <p>Checklist operacional · Bangu</p>
+      </div>
+      <div class="login-card">
+        <div class="form-group">
+          <label class="form-label">Usuário</label>
+          <input class="form-input" id="login-user" placeholder="seu.usuario" autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <input class="form-input" type="password" id="login-pass" placeholder="••••••" autocomplete="current-password"
+            onkeydown="if(event.key==='Enter')doLogin()" />
+        </div>
+        <button class="btn-primary" onclick="doLogin()">Entrar</button>
+        <div class="err" id="login-err"></div>
+        <button class="link-btn" onclick="showAdminLogin()">Área administrativa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div class="screen" id="screen-admin-login">
+    <div class="login-wrap">
+      <div class="login-logo">
+        <div class="flame">⚙️</div>
+        <h1>Administração</h1>
+        <p>Apenas gerentes</p>
+      </div>
+      <div class="login-card">
+        <div class="form-group">
+          <label class="form-label">Senha do gerente</label>
+          <input class="form-input" type="password" id="admin-pass" placeholder="••••••"
+            onkeydown="if(event.key==='Enter')doAdminLogin()" />
+        </div>
+        <button class="btn-primary" onclick="doAdminLogin()">Acessar</button>
+        <div class="err" id="admin-err"></div>
+        <button class="link-btn" onclick="goLogin()">← Voltar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="screen" id="screen-checklist">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2>🔥 Fire House</h2>
+        <p id="ck-date"></p>
+      </div>
+      <div class="topbar-right">
+        <span class="badge-user" id="ck-user"></span>
+        <button class="icon-btn" onclick="viewRelatorio()">Relatório</button>
+        <button class="icon-btn" onclick="goLogin()">Sair</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="turno-tabs">
+        <button class="turno-tab active" onclick="setTurno('abertura')">
+          <div class="dot dot-ab"></div>Abertura
+        </button>
+        <button class="turno-tab" onclick="setTurno('operacao')">
+          <div class="dot dot-op"></div>Operação
+        </button>
+        <button class="turno-tab" onclick="setTurno('fechamento')">
+          <div class="dot dot-fe"></div>Fechamento
+        </button>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-info">
+          <span id="prog-label">Carregando...</span>
+          <span class="progress-pct" id="prog-pct">—</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="task-list" id="checklist-items"></div>
+      <div class="add-extra">
+        <input id="extra-input" placeholder="Adicionar tarefa extra neste turno..." />
+        <button onclick="addExtraTask()">+ Extra</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RELATÓRIO -->
+  <div class="screen" id="screen-relatorio">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2>Relatório do dia</h2>
+        <p id="rel-date"></p>
+      </div>
+      <button class="icon-btn" onclick="backFromRel()">← Voltar</button>
+    </div>
+    <div class="content">
+      <div class="stats-grid" id="rel-stats"></div>
+      <div class="rel-section">
+        <div class="rel-section-title">Abertura</div>
+        <div id="rel-abertura"></div>
+      </div>
+      <div class="rel-section">
+        <div class="rel-section-title">Operação</div>
+        <div id="rel-operacao"></div>
+      </div>
+      <div class="rel-section">
+        <div class="rel-section-title">Fechamento</div>
+        <div id="rel-fechamento"></div>
+      </div>
+      <div class="rel-section">
+        <div class="rel-section-title">Extras</div>
+        <div id="rel-extra"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="screen" id="screen-admin">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2>Administração</h2>
+        <p>Fire House Bangu</p>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" onclick="viewRelatorio()">Relatório</button>
+        <button class="icon-btn" onclick="goLogin()">Sair</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="section-title">Funcionários</div>
+      <div id="admin-users"></div>
+      <div class="inline-form">
+        <input class="form-input" id="nu-nome" placeholder="Nome exibição" />
+        <input class="form-input" id="nu-user" placeholder="usuario" />
+        <input class="form-input" id="nu-pass" placeholder="Senha" type="password" />
+        <select class="form-input" id="nu-cargo">
+          <option value="gerente">Gerente</option>
+          <option value="operador">Operador</option>
+          <option value="caixa">Caixa</option>
+        </select>
+        <button class="btn-primary" style="width:auto;padding:8px 16px;font-size:13px;" onclick="addUser()">+ Add</button>
+      </div>
+      <div class="err" id="user-err"></div>
+
+      <div class="divider"></div>
+
+      <div class="section-title">Tarefas fixas</div>
+      <div id="admin-tasks"></div>
+      <div class="inline-form">
+        <input class="form-input" id="nt-nome" placeholder="Nome da tarefa..." style="flex:2;" />
+        <select class="form-input" id="nt-turno">
+          <option value="abertura">Abertura</option>
+          <option value="operacao">Operação</option>
+          <option value="fechamento">Fechamento</option>
+        </select>
+        <button class="btn-primary" style="width:auto;padding:8px 16px;font-size:13px;" onclick="addFixedTask()">+ Add</button>
+      </div>
+
+      <div class="divider"></div>
+      <div class="section-title">Senha do gerente</div>
+      <div class="inline-form">
+        <input class="form-input" id="nova-senha-admin" placeholder="Nova senha admin" type="password" />
+        <button class="btn-sec" style="width:auto;margin:0;padding:8px 14px;" onclick="updateAdminPass()">Alterar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://ybuvtzgzkfqpggkxttoi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlidXZ0emd6a2ZxcGdna3h0dG9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MjAzNDEsImV4cCI6MjA5MTA5NjM0MX0.yrrgW1lSjlcJ5c2QzM_JaUJOdRhUGME_pIGf9lex1MI';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let isAdmin = false;
+let currentTurno = 'abertura';
+let relFrom = 'checklist';
+let fixedTasks = [];
+let todayRegistros = [];
+let extraTasks = [];
+let adminPass = '1234';
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function fmtDate() {
+  return new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+}
+function nowTime() {
+  return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function toast(msg, dur=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// INIT
+async function init() {
+  show('screen-loading');
+  try {
+    const [ft, tr, cfg] = await Promise.all([
+      sb.from('tarefas_fixas').select('*').eq('ativo', true).order('turno'),
+      sb.from('registros').select('*').eq('data', todayStr()),
+      sb.from('config').select('*').eq('chave', 'admin_pass').maybeSingle()
+    ]);
+    fixedTasks = ft.data || [];
+    todayRegistros = tr.data || [];
+    if (cfg.data) adminPass = cfg.data.valor;
+  } catch(e) {
+    fixedTasks = [];
+    todayRegistros = [];
+  }
+  show('screen-login');
+}
+
+function goLogin() {
+  currentUser = null; isAdmin = false;
+  document.getElementById('login-err').textContent = '';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  show('screen-login');
+}
+
+function showAdminLogin() {
+  document.getElementById('admin-err').textContent = '';
+  document.getElementById('admin-pass').value = '';
+  show('screen-admin-login');
+}
+
+async function doLogin() {
+  const usuario = document.getElementById('login-user').value.trim().toLowerCase();
+  const senha = document.getElementById('login-pass').value.trim();
+  if (!usuario || !senha) { document.getElementById('login-err').textContent = 'Preencha usuário e senha.'; return; }
+  const { data, error } = await sb.from('usuarios').select('*').eq('usuario', usuario).eq('senha', senha).maybeSingle();
+  if (!data) { document.getElementById('login-err').textContent = 'Usuário ou senha inválidos.'; return; }
+  currentUser = data;
+  openChecklist();
+}
+
+async function doAdminLogin() {
+  const p = document.getElementById('admin-pass').value.trim();
+  if (p !== adminPass) { document.getElementById('admin-err').textContent = 'Senha incorreta.'; return; }
+  isAdmin = true;
+  document.getElementById('admin-pass').value = '';
+  await loadAdmin();
+  show('screen-admin');
+}
+
+function openChecklist() {
+  document.getElementById('ck-date').textContent = fmtDate();
+  document.getElementById('ck-user').textContent = currentUser.nome + ' · ' + currentUser.cargo;
+  currentTurno = 'abertura';
+  setTurno('abertura');
+  show('screen-checklist');
+}
+
+function setTurno(turno) {
+  currentTurno = turno;
+  document.querySelectorAll('.turno-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['abertura','operacao','fechamento'][i] === turno);
+  });
+  renderChecklist();
+}
+
+function getRegistroForTask(taskId) {
+  return todayRegistros.find(r => r.tarefa_id === String(taskId));
+}
+
+function renderChecklist() {
+  const fixed = fixedTasks.filter(t => t.turno === currentTurno);
+  const extras = extraTasks.filter(t => t.turno === currentTurno);
+  const all = [...fixed.map(t => ({...t, isExtra:false})), ...extras.map(t => ({...t, isExtra:true}))];
+  const done = all.filter(t => !!getRegistroForTask(t.id)).length;
+  const total = all.length;
+  const pct = total ? Math.round(done/total*100) : 0;
+
+  document.getElementById('prog-label').textContent = done + ' de ' + total + ' concluídas';
+  document.getElementById('prog-pct').textContent = pct + '%';
+  const fill = document.getElementById('prog-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'progress-fill' + (pct === 100 ? ' done-all' : pct > 50 ? '' : ' warn');
+
+  const list = document.getElementById('checklist-items');
+  if (!all.length) { list.innerHTML = '<div class="empty">Sem tarefas neste turno.</div>'; return; }
+
+  list.innerHTML = all.map(t => {
+    const reg = getRegistroForTask(t.id);
+    const isDone = !!reg;
+    const badgeLabel = t.isExtra ? 'Extra' : (t.turno === 'abertura' ? 'Abertura' : t.turno === 'operacao' ? 'Operação' : 'Fechamento');
+    const badgeClass = 'b-' + (t.isExtra ? 'extra' : t.turno);
+    const doneBy = isDone ? `<div class="task-done-by">✓ ${reg.feito_por} · ${reg.horario}</div>` : '';
+    let photoHtml = '';
+    if (isDone) {
+      photoHtml = `<div class="photo-area">
+        <div class="photo-label">Comprovação fotográfica</div>
+        ${reg.foto_url
+          ? `<img class="photo-preview" src="${reg.foto_url}" />`
+          : `<label class="photo-btn" for="ph-${t.id}">📷 Anexar foto</label>
+             <input type="file" id="ph-${t.id}" accept="image/*" capture="environment" style="display:none" onchange="attachPhoto(event,'${t.id}')" />`
+        }
+      </div>`;
+    }
+    return `<div class="task-card ${isDone?'done':''}" id="card-${t.id}">
+      <div class="task-header">
+        <div class="task-check ${isDone?'checked':''}" onclick="toggleTask('${t.id}','${t.nome||t.name}','${t.turno}')">${isDone?'✓':''}</div>
+        <div class="task-info">
+          <div class="task-name ${isDone?'done-text':''}">${t.nome||t.name}</div>
+          <span class="task-badge ${badgeClass}">${badgeLabel}</span>
+          ${doneBy}
+        </div>
+      </div>
+      ${photoHtml}
+    </div>`;
+  }).join('');
+}
+
+async function toggleTask(id, nome, turno) {
+  const existing = getRegistroForTask(id);
+  if (existing) {
+    await sb.from('registros').delete().eq('id', existing.id);
+    todayRegistros = todayRegistros.filter(r => r.id !== existing.id);
+  } else {
+    const reg = {
+      tarefa_id: String(id), tarefa_nome: nome, turno,
+      feito_por: currentUser.nome, horario: nowTime(),
+      foto_url: null, data: todayStr()
+    };
+    const { data } = await sb.from('registros').insert(reg).select().single();
+    if (data) todayRegistros.push(data);
+  }
+  renderChecklist();
+}
+
+async function attachPhoto(e, taskId) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const el = e.target.parentElement;
+  el.innerHTML = '<div class="photo-uploading">⏳ Enviando foto...</div>';
+  const path = `fotos/${todayStr()}/${taskId}-${Date.now()}.jpg`;
+  const { error: upErr } = await sb.storage.from('fotos').upload(path, file, { contentType: file.type });
+  if (upErr) { toast('Erro ao enviar foto.'); renderChecklist(); return; }
+  const { data: urlData } = sb.storage.from('fotos').getPublicUrl(path);
+  const url = urlData.publicUrl;
+  const reg = getRegistroForTask(taskId);
+  if (reg) {
+    await sb.from('registros').update({ foto_url: url }).eq('id', reg.id);
+    reg.foto_url = url;
+  }
+  renderChecklist();
+  toast('Foto salva! 📷');
+}
+
+async function addExtraTask() {
+  const inp = document.getElementById('extra-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  const id = 'ex-' + Date.now();
+  extraTasks.push({ id, nome: text, turno: currentTurno, isExtra: true });
+  inp.value = '';
+  renderChecklist();
+}
+
+// RELATORIO
+async function viewRelatorio() {
+  relFrom = isAdmin ? 'admin' : 'checklist';
+  const { data: regs } = await sb.from('registros').select('*').eq('data', todayStr());
+  todayRegistros = regs || [];
+  document.getElementById('rel-date').textContent = fmtDate();
+  const total = fixedTasks.length;
+  const done = todayRegistros.filter(r => !r.tarefa_id.startsWith('ex-')).length;
+  document.getElementById('rel-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-n">${total}</div><div class="stat-l">Fixas</div></div>
+    <div class="stat-card"><div class="stat-n green">${done}</div><div class="stat-l">Feitas</div></div>
+    <div class="stat-card"><div class="stat-n amber">${Math.max(0,total-done)}</div><div class="stat-l">Pendentes</div></div>
+  `;
+  ['abertura','operacao','fechamento'].forEach(turno => {
+    const tasks = fixedTasks.filter(t => t.turno === turno);
+    const el = document.getElementById('rel-' + turno);
+    if (!tasks.length) { el.innerHTML = '<div class="empty" style="padding:1rem 0">Sem tarefas.</div>'; return; }
+    el.innerHTML = tasks.map(t => {
+      const reg = todayRegistros.find(r => r.tarefa_id === String(t.id));
+      return `<div class="rel-item">
+        <div class="rel-dot ${reg?'dot-ok':'dot-no'}"></div>
+        <div class="rel-name">${t.nome}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+          <span class="rel-who">${reg?reg.feito_por:''}</span>
+          <span class="rel-time">${reg?reg.horario:''}</span>
+        </div>
+        ${reg&&reg.foto_url?`<img class="rel-thumb" src="${reg.foto_url}" />`:''}
+      </div>`;
+    }).join('');
+  });
+  const extras = todayRegistros.filter(r => r.tarefa_id.startsWith('ex-'));
+  const relExtra = document.getElementById('rel-extra');
+  relExtra.innerHTML = extras.length
+    ? extras.map(r => `<div class="rel-item"><div class="rel-dot dot-ok"></div><div class="rel-name">${r.tarefa_nome}</div><span class="rel-who">${r.feito_por}</span></div>`).join('')
+    : '<div class="empty" style="padding:1rem 0">Nenhuma tarefa extra hoje.</div>';
+  show('screen-relatorio');
+}
+
+function backFromRel() {
+  if (relFrom === 'admin') show('screen-admin');
+  else { show('screen-checklist'); renderChecklist(); }
+}
+
+// ADMIN
+async function loadAdmin() {
+  const [users, tasks] = await Promise.all([
+    sb.from('usuarios').select('*').order('cargo'),
+    sb.from('tarefas_fixas').select('*').eq('ativo', true).order('turno')
+  ]);
+  fixedTasks = tasks.data || [];
+  renderAdminUsers(users.data || []);
+  renderAdminTasks(tasks.data || []);
+}
+
+function avClass(cargo) { return cargo==='gerente'?'av-g':cargo==='operador'?'av-o':'av-c'; }
+function roleClass(cargo) { return 'r-'+cargo; }
+
+function renderAdminUsers(users) {
+  document.getElementById('admin-users').innerHTML = users.map(u => `
+    <div class="user-item">
+      <div class="avatar ${avClass(u.cargo)}">${u.nome.slice(0,2).toUpperCase()}</div>
+      <span class="user-name-disp">${u.nome} <span style="color:var(--text2);font-size:11px;font-family:'DM Mono',monospace;">@${u.usuario}</span></span>
+      <span class="role-badge ${roleClass(u.cargo)}">${u.cargo}</span>
+      <button class="del-btn" onclick="removeUser('${u.id}')">×</button>
+    </div>`).join('');
+}
+
+function renderAdminTasks(tasks) {
+  const ordem = {abertura:0, operacao:1, fechamento:2};
+  const sorted = [...tasks].sort((a,b) => (ordem[a.turno]||0)-(ordem[b.turno]||0));
+  document.getElementById('admin-tasks').innerHTML = sorted.map(t => `
+    <div class="user-item">
+      <span class="task-badge b-${t.turno}" style="font-size:10px;">${t.turno==='abertura'?'Ab':t.turno==='operacao'?'Op':'Fe'}</span>
+      <span class="user-name-disp" style="font-size:13px;">${t.nome}</span>
+      <button class="del-btn" onclick="removeTask('${t.id}')">×</button>
+    </div>`).join('');
+}
+
+async function addUser() {
+  const nome = document.getElementById('nu-nome').value.trim();
+  const usuario = document.getElementById('nu-user').value.trim().toLowerCase();
+  const senha = document.getElementById('nu-pass').value.trim();
+  const cargo = document.getElementById('nu-cargo').value;
+  const err = document.getElementById('user-err');
+  if (!nome||!usuario||!senha) { err.textContent='Preencha todos os campos.'; return; }
+  const { error } = await sb.from('usuarios').insert({nome, usuario, senha, cargo});
+  if (error) { err.textContent = error.message; return; }
+  err.textContent = '';
+  document.getElementById('nu-nome').value='';
+  document.getElementById('nu-user').value='';
+  document.getElementById('nu-pass').value='';
+  toast('Funcionário adicionado!');
+  await loadAdmin();
+}
+
+async function removeUser(id) {
+  await sb.from('usuarios').delete().eq('id', id);
+  toast('Usuário removido.');
+  await loadAdmin();
+}
+
+async function addFixedTask() {
+  const nome = document.getElementById('nt-nome').value.trim();
+  const turno = document.getElementById('nt-turno').value;
+  if (!nome) return;
+  await sb.from('tarefas_fixas').insert({nome, turno, ativo: true});
+  document.getElementById('nt-nome').value='';
+  toast('Tarefa adicionada!');
+  await loadAdmin();
+  const {data} = await sb.from('tarefas_fixas').select('*').eq('ativo',true).order('turno');
+  fixedTasks = data || [];
+}
+
+async function removeTask(id) {
+  await sb.from('tarefas_fixas').update({ativo: false}).eq('id', id);
+  toast('Tarefa removida.');
+  await loadAdmin();
+  const {data} = await sb.from('tarefas_fixas').select('*').eq('ativo',true).order('turno');
+  fixedTasks = data || [];
+}
+
+async function updateAdminPass() {
+  const nova = document.getElementById('nova-senha-admin').value.trim();
+  if (!nova) return;
+  await sb.from('config').upsert({chave:'admin_pass', valor: nova});
+  adminPass = nova;
+  document.getElementById('nova-senha-admin').value='';
+  toast('Senha atualizada!');
+}
+
+init();
+</script>
+</body>
+</html>
