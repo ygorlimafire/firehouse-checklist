@@ -477,9 +477,9 @@ async function attachPhoto(e, taskId){
   if(!file) return;
   e.target.parentElement.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:8px;">⏳ Enviando...</div>';
   const path = `fotos/${todayStr()}/${taskId}-${Date.now()}.jpg`;
-  const {error} = await sb.storage.from('fotos').upload(path,file,{contentType:file.type});
+  const {error} = await sb.storage.from('Fotos').upload(path,file,{contentType:file.type});
   if(error){ toast('Erro ao enviar foto.'); renderChecklist(); return; }
-  const {data:urlData} = sb.storage.from('fotos').getPublicUrl(path);
+  const {data:urlData} = sb.storage.from('Fotos').getPublicUrl(path);
   const reg = getRegistro(taskId);
   if(reg){ await sb.from('registros').update({foto_url:urlData.publicUrl}).eq('id',reg.id); reg.foto_url=urlData.publicUrl; }
   renderChecklist(); toast('Foto salva! 📷');
