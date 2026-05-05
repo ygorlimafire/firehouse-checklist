@@ -402,7 +402,8 @@ select.form-input{cursor:pointer;}
 <div class="toast" id="toast"></div>
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <div class="lightbox-close">×</div>
-  <img id="lightbox-img" src="" />
+  <img id="lightbox-img" src="" style="display:block;" />
+  <video id="lightbox-video" src="" controls playsinline style="display:none;max-width:95vw;max-height:90vh;border-radius:10px;" onclick="event.stopPropagation()"></video>
 </div>
 
 <script>
@@ -611,9 +612,11 @@ function renderChecklist(){
       photoHtml = `<div class="photo-area">
         <div class="photo-label">Comprovação fotográfica</div>
         ${reg.foto_url
-          ?`<img class="photo-preview" src="${reg.foto_url}" data-lb="${reg.foto_url}" />`
-          :`<label class="photo-btn" for="ph-${t.id}">📷 Anexar foto</label>
-            <input type="file" id="ph-${t.id}" accept="image/*" capture="environment" style="display:none" onchange="attachPhoto(event,'${t.id}')" />`
+          ?( reg.is_video
+            ? `<video class="photo-preview" src="${reg.foto_url}" controls playsinline style="cursor:default;"></video>`
+            : `<img class="photo-preview" src="${reg.foto_url}" data-lb="${reg.foto_url}" />` )
+          :`<label class="photo-btn" for="ph-${t.id}">📷 Tirar foto ou gravar vídeo</label>
+            <input type="file" id="ph-${t.id}" accept="image/*,video/*" capture="environment" style="display:none" onchange="attachPhoto(event,'${t.id}')" />`
         }
       </div>`;
     }
@@ -650,14 +653,17 @@ async function toggleTask(id, nome, setor, categoria, turno){
 async function attachPhoto(e, taskId){
   const file = e.target.files[0];
   if(!file) return;
-  e.target.parentElement.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:8px;">⏳ Enviando...</div>';
-  const path = `fotos/${todayStr()}/${taskId}-${Date.now()}.jpg`;
+  const isVideo = file.type.startsWith('video/');
+  const ext = isVideo ? 'mp4' : 'jpg';
+  const icon = isVideo ? '🎥' : '📷';
+  e.target.parentElement.innerHTML=`<div style="font-size:12px;color:var(--text2);text-align:center;padding:8px;">⏳ Enviando ${isVideo?'vídeo':'foto'}...</div>`;
+  const path = `fotos/${todayStr()}/${taskId}-${Date.now()}.${ext}`;
   const {error} = await sb.storage.from('Fotos').upload(path,file,{contentType:file.type});
-  if(error){ toast('Erro ao enviar foto.'); renderChecklist(); return; }
+  if(error){ toast('Erro ao enviar arquivo.'); renderChecklist(); return; }
   const {data:urlData} = sb.storage.from('Fotos').getPublicUrl(path);
   const reg = getRegistro(taskId);
-  if(reg){ await sb.from('registros').update({foto_url:urlData.publicUrl}).eq('id',reg.id); reg.foto_url=urlData.publicUrl; }
-  renderChecklist(); toast('Foto salva! 📷');
+  if(reg){ await sb.from('registros').update({foto_url:urlData.publicUrl, is_video: isVideo}).eq('id',reg.id); reg.foto_url=urlData.publicUrl; reg.is_video=isVideo; }
+  renderChecklist(); toast(`${icon} ${isVideo?'Vídeo':'Foto'} salvo!`);
 }
 
 function addExtraTask(){
@@ -701,7 +707,7 @@ async function viewRelatorio(){
             <span class="rel-who">${reg?reg.feito_por:''}</span>
             <span class="rel-time">${reg?reg.horario:''}</span>
           </div>
-          ${reg&&reg.foto_url?`<img class="rel-thumb" src="${reg.foto_url}" data-lb="${reg.foto_url}" />`:''}
+          ${reg&&reg.foto_url?(reg.is_video?`<div class="rel-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--bg3);border-radius:6px;font-size:18px;" onclick="openVideo('${reg.foto_url}')">🎥</div>`:`<img class="rel-thumb" src="${reg.foto_url}" data-lb="${reg.foto_url}" />`):''}
         </div>`;
       }).join('');
     }
@@ -803,14 +809,25 @@ async function updateAdminPass(){
   toast('Senha atualizada!');
 }
 
-// LIGHTBOX - event delegation (avoids inline onclick quote issues)
+// LIGHTBOX - event delegation
 function openLightbox(url){ 
-  document.getElementById('lightbox-img').src=url; 
+  document.getElementById('lightbox-img').src=url;
+  document.getElementById('lightbox-img').style.display='block';
+  document.getElementById('lightbox-video').style.display='none';
   document.getElementById('lightbox').classList.add('open'); 
+}
+function openVideo(url){
+  const vid = document.getElementById('lightbox-video');
+  vid.src = url;
+  vid.style.display = 'block';
+  document.getElementById('lightbox-img').style.display = 'none';
+  document.getElementById('lightbox').classList.add('open');
 }
 function closeLightbox(){ 
   document.getElementById('lightbox').classList.remove('open'); 
   document.getElementById('lightbox-img').src='';
+  const vid = document.getElementById('lightbox-video');
+  vid.pause(); vid.src='';
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLightbox(); });
 document.addEventListener('click',e=>{
@@ -895,7 +912,7 @@ function renderHistorico(){
           <span class="rel-who">${reg?reg.feito_por:''}</span>
           <span class="rel-time">${reg?reg.horario:''}</span>
         </div>
-        ${reg&&reg.foto_url?`<img class="rel-thumb" src="${reg.foto_url}" data-lb="${reg.foto_url}" />`:''}
+        ${reg&&reg.foto_url?(reg.is_video?`<div class="rel-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--bg3);border-radius:6px;font-size:18px;" onclick="openVideo('${reg.foto_url}')">🎥</div>`:`<img class="rel-thumb" src="${reg.foto_url}" data-lb="${reg.foto_url}" />`):''}
       </div>`;
     }).join('');
   }
