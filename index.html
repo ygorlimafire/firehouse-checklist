@@ -913,7 +913,8 @@ function periodDates(days){
 async function viewDashboard(){
   dashFrom = isAdmin ? 'admin' : 'checklist';
   const h = greeting();
-  document.getElementById('dash-greeting-name').textContent = h+', '+currentUser.nome;
+  const nome = currentUser ? currentUser.nome : 'Gestor';
+  document.getElementById('dash-greeting-name').textContent = h+', '+nome;
   document.getElementById('dash-date').textContent = fmtDate(dataOperacional());
   show('screen-dashboard');
   await loadDashboard();
