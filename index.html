@@ -156,6 +156,35 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .toast.show{opacity:1;}
 select.form-input{cursor:pointer;}
 
+
+/* TURNO BANNER */
+.turno-banner{margin-bottom:16px;border-radius:var(--rad-lg);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.turno-banner.aberto{background:rgba(46,204,138,0.1);border:1px solid rgba(46,204,138,0.25);}
+.turno-banner.fechado{background:rgba(232,82,26,0.08);border:1px solid rgba(232,82,26,0.2);}
+.turno-banner-info{display:flex;flex-direction:column;gap:2px;}
+.turno-banner-title{font-size:13px;font-weight:600;}
+.turno-banner.aberto .turno-banner-title{color:var(--green);}
+.turno-banner.fechado .turno-banner-title{color:var(--accent2);}
+.turno-banner-sub{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;}
+.btn-turno{padding:7px 14px;border-radius:var(--rad);border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all 0.15s;}
+.btn-turno.abrir{background:var(--green);color:#0f0f0f;}
+.btn-turno.encerrar{background:rgba(232,82,26,0.15);color:var(--accent2);border:1px solid rgba(232,82,26,0.3);}
+.btn-turno:hover{opacity:0.85;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:150;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rad-lg) var(--rad-lg) 0 0;padding:1.5rem;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.2s;}
+.modal-overlay.open .modal-box{transform:translateY(0);}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--text2);margin-bottom:16px;}
+.modal-pending{display:flex;flex-direction:column;gap:6px;margin-bottom:20px;max-height:240px;overflow-y:auto;}
+.modal-pending-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:var(--rad);font-size:13px;}
+.modal-pending-dot{width:7px;height:7px;border-radius:50%;background:#e24b4a;flex-shrink:0;}
+.modal-actions{display:flex;gap:8px;}
+.modal-actions .btn-primary{margin:0;}
+.btn-cancel{flex:1;padding:11px;border-radius:var(--rad);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
 /* LIGHTBOX */
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
 .lightbox.open{opacity:1;pointer-events:all;}
@@ -245,6 +274,7 @@ select.form-input{cursor:pointer;}
       <button class="setor-tab cozinha active" id="tab-cozinha" onclick="setSetor('cozinha')">🍳 Cozinha</button>
       <button class="setor-tab salao" id="tab-salao" onclick="setSetor('salao')">🪑 Salão</button>
     </div>
+    <div id="turno-banner"></div>
     <div class="cat-chips" id="cat-chips"></div>
     <div class="progress-wrap">
       <div class="progress-info">
@@ -336,6 +366,19 @@ select.form-input{cursor:pointer;}
   </div>
 </div>
 
+<!-- MODAL ENCERRAR TURNO -->
+<div class="modal-overlay" id="modal-encerrar">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ Encerrar turno?</div>
+    <div class="modal-sub">As seguintes tarefas ainda estão pendentes:</div>
+    <div class="modal-pending" id="modal-pending-list"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" style="flex:1;margin:0;" onclick="confirmarEncerramento()">Confirmar encerramento</button>
+    </div>
+  </div>
+</div>
+
 <!-- HISTÓRICO -->
 <div class="screen" id="screen-historico">
   <div class="topbar">
@@ -381,24 +424,42 @@ let fixedTasks = [];
 let todayRegistros = [];
 let extraTasks = [];
 let adminPass = '1234';
+let turnoAtivo = null; // turno operacional atual
 
-function todayStr(){ return new Date().toISOString().slice(0,10); }
-function fmtDate(){ return new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}); }
+// Data operacional: se for antes das 06h, pertence ao dia anterior
+function dataOperacional(){
+  const now = new Date();
+  if(now.getHours() < 6){
+    const d = new Date(now);
+    d.setDate(d.getDate()-1);
+    return d.toISOString().slice(0,10);
+  }
+  return now.toISOString().slice(0,10);
+}
+function todayStr(){ return dataOperacional(); }
+function fmtDate(d){
+  const date = d ? new Date(d+'T12:00:00') : new Date();
+  return date.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+}
 function nowTime(){ return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function nowISO(){ return new Date().toISOString(); }
 function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function toast(msg,dur=2500){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),dur); }
 
 async function init(){
   show('screen-loading');
   try {
-    const [ft,tr,cfg] = await Promise.all([
+    const dataOp = dataOperacional();
+    const [ft,tr,cfg,tv] = await Promise.all([
       sb.from('tarefas_fixas').select('*').eq('ativo',true).order('setor').order('categoria').order('turno'),
-      sb.from('registros').select('*').eq('data',todayStr()),
-      sb.from('config').select('*').eq('chave','admin_pass').maybeSingle()
+      sb.from('registros').select('*').eq('data',dataOp),
+      sb.from('config').select('*').eq('chave','admin_pass').maybeSingle(),
+      sb.from('turnos').select('*').eq('data_operacional',dataOp).eq('status','aberto').maybeSingle()
     ]);
     fixedTasks = ft.data||[];
     todayRegistros = tr.data||[];
     if(cfg.data) adminPass = cfg.data.valor;
+    turnoAtivo = tv.data||null;
   } catch(e){ fixedTasks=[]; todayRegistros=[]; }
   show('screen-login');
 }
@@ -425,11 +486,84 @@ async function doAdminLogin(){
 }
 
 function openChecklist(){
-  document.getElementById('ck-date').textContent = fmtDate();
+  document.getElementById('ck-date').textContent = fmtDate(todayStr());
   document.getElementById('ck-user').textContent = currentUser.nome+' · '+currentUser.cargo;
   currentSetor='cozinha'; currentCat='Todos';
+  renderTurnoBanner();
   setSetor('cozinha');
   show('screen-checklist');
+}
+
+function renderTurnoBanner(){
+  const banner = document.getElementById('turno-banner');
+  if(turnoAtivo){
+    const abertoPor = turnoAtivo.aberto_por;
+    const hora = new Date(turnoAtivo.aberto_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    banner.innerHTML = `
+      <div class="turno-banner aberto">
+        <div class="turno-banner-info">
+          <span class="turno-banner-title">🟢 Turno aberto</span>
+          <span class="turno-banner-sub">Aberto por ${abertoPor} às ${hora}</span>
+        </div>
+        <button class="btn-turno encerrar" onclick="iniciarEncerramento()">Encerrar turno</button>
+      </div>`;
+  } else {
+    banner.innerHTML = `
+      <div class="turno-banner fechado">
+        <div class="turno-banner-info">
+          <span class="turno-banner-title">🔴 Nenhum turno aberto</span>
+          <span class="turno-banner-sub">Abra o turno para começar</span>
+        </div>
+        <button class="btn-turno abrir" onclick="abrirTurno()">Abrir turno</button>
+      </div>`;
+  }
+}
+
+async function abrirTurno(){
+  const dataOp = dataOperacional();
+  const {data, error} = await sb.from('turnos').insert({
+    data_operacional: dataOp,
+    aberto_por: currentUser.nome,
+    aberto_em: nowISO(),
+    status: 'aberto'
+  }).select().single();
+  if(error){ toast('Erro ao abrir turno.'); return; }
+  turnoAtivo = data;
+  renderTurnoBanner();
+  toast('Turno aberto! Bom serviço 🔥');
+}
+
+function iniciarEncerramento(){
+  // Build list of pending tasks
+  const pending = fixedTasks.filter(t => !todayRegistros.find(r=>r.tarefa_id===String(t.id)));
+  const listEl = document.getElementById('modal-pending-list');
+  if(pending.length === 0){
+    listEl.innerHTML = '<div style="font-size:13px;color:var(--green);padding:8px 0;">✓ Todas as tarefas foram concluídas!</div>';
+  } else {
+    listEl.innerHTML = pending.map(t=>`
+      <div class="modal-pending-item">
+        <div class="modal-pending-dot"></div>
+        <span>${t.nome} <span style="font-size:11px;color:var(--text2);">(${t.categoria})</span></span>
+      </div>`).join('');
+  }
+  document.getElementById('modal-encerrar').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modal-encerrar').classList.remove('open');
+}
+
+async function confirmarEncerramento(){
+  if(!turnoAtivo){ closeModal(); return; }
+  await sb.from('turnos').update({
+    encerrado_por: currentUser.nome,
+    encerrado_em: nowISO(),
+    status: 'encerrado'
+  }).eq('id', turnoAtivo.id);
+  turnoAtivo = null;
+  closeModal();
+  renderTurnoBanner();
+  toast('Turno encerrado. Bom descanso! 👋');
 }
 
 function setSetor(setor){
@@ -541,7 +675,7 @@ async function viewRelatorio(){
   relFrom = isAdmin?'admin':'checklist';
   const {data:regs} = await sb.from('registros').select('*').eq('data',todayStr());
   todayRegistros = regs||[];
-  document.getElementById('rel-date').textContent = fmtDate();
+  document.getElementById('rel-date').textContent = fmtDate(todayStr());
   const total = fixedTasks.length;
   const done = todayRegistros.filter(r=>!String(r.tarefa_id).startsWith('ex-')).length;
   document.getElementById('rel-stats').innerHTML=`
@@ -691,7 +825,7 @@ let histFrom = 'checklist';
 
 function viewHistorico(){
   histFrom = isAdmin ? 'admin' : 'checklist';
-  document.getElementById('hist-date').value = todayStr();
+  document.getElementById('hist-date').value = dataOperacional();
   histSetor = 'cozinha';
   setHistSetor('cozinha');
   show('screen-historico');
@@ -713,10 +847,26 @@ function setHistSetor(s){
 async function loadHistorico(){
   const date = document.getElementById('hist-date').value;
   if(!date) return;
-  document.getElementById('hist-subtitle').textContent = new Date(date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('hist-subtitle').textContent = fmtDate(date);
   document.getElementById('hist-body').innerHTML = '<div class="empty">Carregando...</div>';
-  const {data} = await sb.from('registros').select('*').eq('data', date);
-  histRegs = data || [];
+  const [{data: regs},{data: turnos}] = await Promise.all([
+    sb.from('registros').select('*').eq('data', date),
+    sb.from('turnos').select('*').eq('data_operacional', date).order('aberto_em')
+  ]);
+  histRegs = regs || [];
+  // Show turno info in stats
+  const turnoInfo = (turnos||[]).map(t=>{
+    const horaAb = t.aberto_em ? new Date(t.aberto_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '—';
+    const horaFe = t.encerrado_em ? new Date(t.encerrado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : 'Em aberto';
+    const cor = t.status==='encerrado' ? 'var(--green)' : 'var(--amber)';
+    return `<div style="font-size:12px;color:var(--text2);margin-bottom:8px;padding:8px 10px;background:var(--bg3);border-radius:var(--rad);">
+      <span style="color:${cor};font-weight:600;">${t.status==='encerrado'?'✓ Encerrado':'🟡 Em aberto'}</span>
+      · Aberto por <b>${t.aberto_por}</b> às ${horaAb}
+      ${t.encerrado_por ? `· Encerrado por <b>${t.encerrado_por}</b> às ${horaFe}` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('hist-stats').innerHTML = turnoInfo ? 
+    `<div style="grid-column:1/-1;">${turnoInfo}</div>` : '';
   renderHistorico();
 }
 
