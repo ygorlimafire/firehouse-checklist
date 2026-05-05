@@ -18,7 +18,18 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;}
 .app{max-width:480px;margin:0 auto;padding:0 0 80px;}
-#screen-dashboard{max-width:none;width:100%;}
+
+/* Full-screen panels break out of .app */
+#screen-dashboard,
+#screen-admin{
+  position:fixed;inset:0;
+  max-width:none !important;
+  width:100vw !important;
+  height:100vh !important;
+  overflow:hidden;
+  z-index:50;
+  background:var(--bg);
+}
 .screen{display:none;}.screen.active{display:block;}
 
 /* LOGIN */
@@ -191,7 +202,6 @@ select.form-input{cursor:pointer;}
 /* ═══════════════════════════════════════════
    ADMIN PANEL — SIDEBAR LAYOUT
 ═══════════════════════════════════════════ */
-#screen-admin{max-width:none;width:100%;height:100vh;overflow:hidden;}
 .adm-shell{display:flex;height:100vh;overflow:hidden;}
 
 /* ── SIDEBAR ── */
