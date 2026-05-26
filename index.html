@@ -755,8 +755,8 @@ select.form-input{cursor:pointer;}
 </div>
 
 <script>
-const SUPABASE_URL = 'https://ybuvtzgzkfqpggkxttoi.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlidXZ0emd6a2ZxcGdna3h0dG9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MjAzNDEsImV4cCI6MjA5MTA5NjM0MX0.yrrgW1lSjlcJ5c2QzM_JaUJOdRhUGME_pIGf9lex1MI';
+const SUPABASE_URL = 'https://paigomvxdlhrhbjclqfe.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_kU6oPX460pXcSYU3e16QZg_0aZoH974';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const SETORES = {
@@ -800,10 +800,10 @@ async function init(){
   try {
     const dataOp = dataOperacional();
     const [ft,tr,cfg,tv] = await Promise.all([
-      sb.from('tarefas_fixas').select('*').eq('ativo',true).order('setor').order('categoria').order('turno'),
-      sb.from('registros').select('*').eq('data',dataOp),
-      sb.from('config').select('*').eq('chave','admin_pass').maybeSingle(),
-      sb.from('turnos').select('*').eq('data_operacional',dataOp).eq('status','aberto').maybeSingle()
+      sb.from('checklist_tarefas_fixas').select('*').eq('ativo',1).order('setor').order('categoria').order('turno'),
+      sb.from('checklist_registros').select('*').eq('data',dataOp),
+      sb.from('checklist_config').select('*').eq('chave','admin_pass').maybeSingle(),
+      sb.from('checklist_turnos').select('*').eq('data_operacional',dataOp).eq('status','aberto').maybeSingle()
     ]);
     fixedTasks = ft.data||[];
     todayRegistros = tr.data||[];
@@ -820,7 +820,7 @@ async function doLogin(){
   const usuario = document.getElementById('login-user').value.trim().toLowerCase();
   const senha = document.getElementById('login-pass').value.trim();
   if(!usuario||!senha){ document.getElementById('login-err').textContent='Preencha usuário e senha.'; return; }
-  const {data} = await sb.from('usuarios').select('*').eq('usuario',usuario).eq('senha',senha).maybeSingle();
+  const {data} = await sb.from('checklist_usuarios').select('*').eq('usuario',usuario).eq('senha',senha).maybeSingle();
   if(!data){ document.getElementById('login-err').textContent='Usuário ou senha inválidos.'; return; }
   currentUser = data;
   openChecklist();
@@ -872,7 +872,7 @@ function renderTurnoBanner(){
 
 async function abrirTurno(){
   const dataOp = dataOperacional();
-  const {data, error} = await sb.from('turnos').insert({
+  const {data, error} = await sb.from('checklist_turnos').insert({
     data_operacional: dataOp,
     aberto_por: currentUser.nome,
     aberto_em: nowISO(),
@@ -906,7 +906,7 @@ function closeModal(){
 
 async function confirmarEncerramento(){
   if(!turnoAtivo){ closeModal(); return; }
-  await sb.from('turnos').update({
+  await sb.from('checklist_turnos').update({
     encerrado_por: currentUser.nome,
     encerrado_em: nowISO(),
     status: 'encerrado'
@@ -990,11 +990,11 @@ function renderChecklist(){
 async function toggleTask(id, nome, setor, categoria, turno){
   const existing = getRegistro(id);
   if(existing){
-    await sb.from('registros').delete().eq('id',existing.id);
+    await sb.from('checklist_registros').delete().eq('id',existing.id);
     todayRegistros = todayRegistros.filter(r=>r.id!==existing.id);
   } else {
     const reg = {tarefa_id:String(id),tarefa_nome:nome,setor,categoria,turno,feito_por:currentUser.nome,horario:nowTime(),foto_url:null,data:todayStr()};
-    const {data} = await sb.from('registros').insert(reg).select().single();
+    const {data} = await sb.from('checklist_registros').insert(reg).select().single();
     if(data) todayRegistros.push(data);
   }
   renderChecklist();
@@ -1012,7 +1012,7 @@ async function attachPhoto(e, taskId){
   if(error){ toast('Erro ao enviar arquivo.'); renderChecklist(); return; }
   const {data:urlData} = sb.storage.from('Fotos').getPublicUrl(path);
   const reg = getRegistro(taskId);
-  if(reg){ await sb.from('registros').update({foto_url:urlData.publicUrl, is_video: isVideo}).eq('id',reg.id); reg.foto_url=urlData.publicUrl; reg.is_video=isVideo; }
+  if(reg){ await sb.from('checklist_registros').update({foto_url:urlData.publicUrl, is_video: isVideo ? 1 : 0}).eq('id',reg.id); reg.foto_url=urlData.publicUrl; reg.is_video=isVideo; }
   renderChecklist(); toast(`${icon} ${isVideo?'Vídeo':'Foto'} salvo!`);
 }
 
@@ -1029,7 +1029,7 @@ function addExtraTask(){
 // RELATORIO
 async function viewRelatorio(){
   relFrom = isAdmin?'admin':'checklist';
-  const {data:regs} = await sb.from('registros').select('*').eq('data',todayStr());
+  const {data:regs} = await sb.from('checklist_registros').select('*').eq('data',todayStr());
   todayRegistros = regs||[];
   document.getElementById('rel-date').textContent = fmtDate(todayStr());
   const total = fixedTasks.length;
@@ -1120,9 +1120,9 @@ function renderSetorTab(){
 
 async function loadLocalStats(){
   const [{count:ct},{count:cr},{count:cu}] = await Promise.all([
-    sb.from('tarefas_fixas').select('*',{count:'exact',head:true}).eq('ativo',true),
-    sb.from('registros').select('*',{count:'exact',head:true}),
-    sb.from('usuarios').select('*',{count:'exact',head:true})
+    sb.from('checklist_tarefas_fixas').select('*',{count:'exact',head:true}).eq('ativo',1),
+    sb.from('checklist_registros').select('*',{count:'exact',head:true}),
+    sb.from('checklist_usuarios').select('*',{count:'exact',head:true})
   ]);
   document.getElementById('local-stats').innerHTML = `
     <div class="adm-info-row"><span class="adm-info-label">Tarefas ativas</span><span>${ct||0}</span></div>
@@ -1137,8 +1137,8 @@ async function loadRelDia(){
   const el = document.getElementById('adm-rel-content');
   el.innerHTML = '<div class="dash-loading">Carregando relatório...</div>';
   const [{data:regs},{data:turnos}] = await Promise.all([
-    sb.from('registros').select('*').eq('data',date).order('horario'),
-    sb.from('turnos').select('*').eq('data_operacional',date)
+    sb.from('checklist_registros').select('*').eq('data',date).order('horario'),
+    sb.from('checklist_turnos').select('*').eq('data_operacional',date)
   ]);
   const allRegs = regs||[];
   const allTurnos = turnos||[];
@@ -1226,8 +1226,8 @@ async function loadRelDia(){
 // ADMIN
 async function loadAdmin(){
   const [users,tasks] = await Promise.all([
-    sb.from('usuarios').select('*').order('cargo'),
-    sb.from('tarefas_fixas').select('*').eq('ativo',true).order('setor').order('categoria')
+    sb.from('checklist_usuarios').select('*').order('cargo'),
+    sb.from('checklist_tarefas_fixas').select('*').eq('ativo',1).order('setor').order('categoria')
   ]);
   fixedTasks = tasks.data||[];
   renderAdminUsers(users.data||[]);
@@ -1264,7 +1264,7 @@ async function addUser(){
   const cargo=document.getElementById('nu-cargo').value;
   const err=document.getElementById('user-err');
   if(!nome||!usuario||!senha){err.textContent='Preencha todos os campos.';return;}
-  const {error}=await sb.from('usuarios').insert({nome,usuario,senha,cargo});
+  const {error}=await sb.from('checklist_usuarios').insert({nome,usuario,senha,cargo});
   if(error){err.textContent=error.message;return;}
   err.textContent='';
   ['nu-nome','nu-user','nu-pass'].forEach(id=>document.getElementById(id).value='');
@@ -1272,7 +1272,7 @@ async function addUser(){
   await loadAdmin();
 }
 
-async function removeUser(id){ await sb.from('usuarios').delete().eq('id',id); toast('Usuário removido.'); await loadAdmin(); }
+async function removeUser(id){ await sb.from('checklist_usuarios').delete().eq('id',id); toast('Usuário removido.'); await loadAdmin(); }
 
 async function addFixedTask(){
   const nome=document.getElementById('nt-nome').value.trim();
@@ -1280,26 +1280,26 @@ async function addFixedTask(){
   const categoria=document.getElementById('nt-categoria').value;
   const turno=document.getElementById('nt-turno').value;
   if(!nome) return;
-  await sb.from('tarefas_fixas').insert({nome,setor,categoria,turno,ativo:true});
+  await sb.from('checklist_tarefas_fixas').insert({nome,setor,categoria,turno,ativo:1});
   document.getElementById('nt-nome').value='';
   toast('Tarefa adicionada!');
   await loadAdmin();
-  const {data}=await sb.from('tarefas_fixas').select('*').eq('ativo',true).order('setor').order('categoria');
+  const {data}=await sb.from('checklist_tarefas_fixas').select('*').eq('ativo',1).order('setor').order('categoria');
   fixedTasks=data||[];
 }
 
 async function removeTask(id){
-  await sb.from('tarefas_fixas').update({ativo:false}).eq('id',id);
+  await sb.from('checklist_tarefas_fixas').update({ativo:0}).eq('id',id);
   toast('Tarefa removida.');
   await loadAdmin();
-  const {data}=await sb.from('tarefas_fixas').select('*').eq('ativo',true).order('setor').order('categoria');
+  const {data}=await sb.from('checklist_tarefas_fixas').select('*').eq('ativo',1).order('setor').order('categoria');
   fixedTasks=data||[];
 }
 
 async function updateAdminPass(){
   const nova=document.getElementById('nova-senha-admin').value.trim();
   if(!nova) return;
-  await sb.from('config').upsert({chave:'admin_pass',valor:nova});
+  await sb.from('checklist_config').upsert({chave:'admin_pass',valor:nova});
   adminPass=nova;
   document.getElementById('nova-senha-admin').value='';
   toast('Senha atualizada!');
@@ -1362,9 +1362,9 @@ async function loadDashboard(){
   const endDate = dates[dates.length-1];
 
   const [{data:regs},{data:turnos},{data:tarefas}] = await Promise.all([
-    sb.from('registros').select('*').gte('data',startDate).lte('data',endDate),
-    sb.from('turnos').select('*').gte('data_operacional',startDate).lte('data_operacional',endDate).order('data_operacional',{ascending:false}),
-    sb.from('tarefas_fixas').select('*').eq('ativo',true)
+    sb.from('checklist_registros').select('*').gte('data',startDate).lte('data',endDate),
+    sb.from('checklist_turnos').select('*').gte('data_operacional',startDate).lte('data_operacional',endDate).order('data_operacional',{ascending:false}),
+    sb.from('checklist_tarefas_fixas').select('*').eq('ativo',1)
   ]);
 
   const allRegs = regs||[];
@@ -1577,8 +1577,8 @@ async function loadHistorico(){
   document.getElementById('hist-subtitle').textContent = fmtDate(date);
   document.getElementById('hist-body').innerHTML = '<div class="empty">Carregando...</div>';
   const [{data: regs},{data: turnos}] = await Promise.all([
-    sb.from('registros').select('*').eq('data', date),
-    sb.from('turnos').select('*').eq('data_operacional', date).order('aberto_em')
+    sb.from('checklist_registros').select('*').eq('data', date),
+    sb.from('checklist_turnos').select('*').eq('data_operacional', date).order('aberto_em')
   ]);
   histRegs = regs || [];
   // Show turno info in stats
