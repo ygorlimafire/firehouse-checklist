@@ -822,6 +822,7 @@ async function doLogin(){
   if(!usuario||!senha){ document.getElementById('login-err').textContent='Preencha usuário e senha.'; return; }
   const {data} = await sb.from('checklist_usuarios').select('*').eq('usuario',usuario).eq('senha',senha).maybeSingle();
   if(!data){ document.getElementById('login-err').textContent='Usuário ou senha inválidos.'; return; }
+  if(data.ativo === 0){ document.getElementById('login-err').textContent='Acesso desativado. Fale com o gerente.'; return; }
   currentUser = data;
   openChecklist();
 }
@@ -961,9 +962,9 @@ function renderChecklist(){
     if(isDone){
       photoHtml = `<div class="photo-area">
         <div class="photo-label">Comprovação fotográfica</div>
-        ${reg.foto_url
-          ?( reg.is_video
-            ? `<video class="photo-preview" src="${reg.foto_url}" controls playsinline style="cursor:default;"></video>`
+        ${(reg.video_url || reg.foto_url)
+          ?( reg.video_url || reg.is_video
+            ? `<video class="photo-preview" src="${reg.video_url||reg.foto_url}" controls playsinline style="cursor:default;"></video>`
             : `<img class="photo-preview" src="${reg.foto_url}" data-lb="${reg.foto_url}" />` )
           :`<label class="photo-btn" for="ph-${t.id}">📷 Tirar foto ou gravar vídeo</label>
             <input type="file" id="ph-${t.id}" accept="image/*,video/*" capture="environment" style="display:none" onchange="attachPhoto(event,'${t.id}')" />`
@@ -1012,7 +1013,14 @@ async function attachPhoto(e, taskId){
   if(error){ toast('Erro ao enviar arquivo.'); renderChecklist(); return; }
   const {data:urlData} = sb.storage.from('Fotos').getPublicUrl(path);
   const reg = getRegistro(taskId);
-  if(reg){ await sb.from('checklist_registros').update({foto_url:urlData.publicUrl, is_video: isVideo ? 1 : 0}).eq('id',reg.id); reg.foto_url=urlData.publicUrl; reg.is_video=isVideo; }
+  if(reg){
+    const updateData = isVideo
+      ? { video_url: urlData.publicUrl, is_video: 1 }
+      : { foto_url:  urlData.publicUrl, is_video: 0 };
+    await sb.from('checklist_registros').update(updateData).eq('id',reg.id);
+    if(isVideo){ reg.video_url = urlData.publicUrl; reg.is_video = 1; }
+    else        { reg.foto_url  = urlData.publicUrl; reg.is_video = 0; }
+  }
   renderChecklist(); toast(`${icon} ${isVideo?'Vídeo':'Foto'} salvo!`);
 }
 
