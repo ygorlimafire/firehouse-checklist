@@ -168,6 +168,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .toast.show{opacity:1;}
 select.form-input{cursor:pointer;}
 
+/* BELL BADGE */
+.bell-btn{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:6px 10px;color:var(--text2);font-size:15px;cursor:pointer;transition:all 0.15s;line-height:1;}
+.bell-btn:hover{border-color:var(--border2);color:var(--text);}
+.bell-badge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:20px;background:var(--accent);color:white;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:center;line-height:1;}
+
+/* AVISO BANNER (acima do turno-banner) */
+.aviso-banner-card{border-radius:var(--rad-lg);padding:12px 14px;margin-bottom:10px;border-left:4px solid var(--accent);background:rgba(232,82,26,0.08);border:1px solid rgba(232,82,26,0.22);border-left-width:4px;cursor:pointer;}
+.aviso-banner-card.prio-alta{background:rgba(220,38,38,0.08);border-color:rgba(220,38,38,0.25);border-left-color:#dc2626;}
+.aviso-banner-card.prio-media{background:rgba(180,83,9,0.08);border-color:rgba(180,83,9,0.22);border-left-color:#b45309;}
+.aviso-banner-card.prio-baixa{background:rgba(107,114,128,0.08);border-color:rgba(107,114,128,0.2);border-left-color:#6b7280;}
+.aviso-banner-pin{font-size:10px;font-weight:700;color:var(--amber);margin-right:6px;}
+.aviso-banner-title{font-size:13px;font-weight:600;color:var(--text);}
+.aviso-banner-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+.aviso-banner-more{font-size:11px;color:var(--text2);text-align:center;padding:4px 0;cursor:pointer;}
+.aviso-banner-more:hover{color:var(--text);}
+
+/* AVISOS SCREEN */
+.aviso-prio-chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.aviso-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad-lg);padding:14px 16px;margin-bottom:10px;}
+.aviso-card.prio-alta{border-left:4px solid #dc2626;}
+.aviso-card.prio-media{border-left:4px solid #b45309;}
+.aviso-card.prio-baixa{border-left:4px solid #6b7280;}
 
 /* TURNO BANNER */
 .turno-banner{margin-bottom:16px;border-radius:var(--rad-lg);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
@@ -488,6 +510,7 @@ select.form-input{cursor:pointer;}
     </div>
     <div class="topbar-right">
       <span class="badge-user" id="ck-user"></span>
+      <button class="bell-btn" id="bell-btn" onclick="viewAvisos()" title="Avisos do ERP">🔔<span class="bell-badge" id="bell-badge" style="display:none">0</span></button>
       <button class="icon-btn" onclick="viewRelatorio()">Relatório</button>
       <button class="icon-btn" onclick="viewHistorico()">Histórico</button>
       <button class="icon-btn" onclick="goLogin()">Sair</button>
@@ -498,6 +521,7 @@ select.form-input{cursor:pointer;}
       <button class="setor-tab cozinha active" id="tab-cozinha" onclick="setSetor('cozinha')">🍳 Cozinha</button>
       <button class="setor-tab salao" id="tab-salao" onclick="setSetor('salao')">🪑 Salão</button>
     </div>
+    <div id="aviso-banner"></div>
     <div id="turno-banner"></div>
     <div class="cat-chips" id="cat-chips"></div>
     <div class="progress-wrap">
@@ -566,6 +590,12 @@ select.form-input{cursor:pointer;}
             <span class="adm-nav-icon">📋</span><span class="adm-nav-text">Relatório diário</span>
           </button>
         </div>
+        <div class="adm-nav-label">ERP</div>
+        <div class="adm-nav-group">
+          <button class="adm-nav-item" onclick="admTab('avisos',this)">
+            <span class="adm-nav-icon">📢</span><span class="adm-nav-text">Avisos do ERP</span>
+          </button>
+        </div>
       </nav>
       <button class="adm-logout" onclick="goLogin()"><span>←</span><span class="adm-nav-text"> Sair</span></button>
     </aside>
@@ -599,6 +629,12 @@ select.form-input{cursor:pointer;}
               <option value="gerente">Gerente</option>
               <option value="operador">Operador</option>
               <option value="caixa">Caixa</option>
+            </select>
+            <select class="form-input" id="nu-setor">
+              <option value="todos">Todos os setores</option>
+              <option value="cozinha">Cozinha</option>
+              <option value="salao">Salão</option>
+              <option value="administrativo">Administrativo</option>
             </select>
             <button class="btn-primary" style="width:auto;white-space:nowrap;" onclick="addUser()">+ Adicionar</button>
           </div>
@@ -676,6 +712,12 @@ select.form-input{cursor:pointer;}
         </div>
       </div>
 
+      <!-- AVISOS TAB -->
+      <div class="adm-tab" id="adm-tab-avisos">
+        <div class="adm-tab-header"><h2>Avisos do ERP</h2><button class="btn-sec" style="width:auto;padding:8px 16px;" onclick="loadAdmAvisos()">↻ Atualizar</button></div>
+        <div id="adm-avisos-content"><div class="dash-loading">Clique em "Avisos do ERP" para carregar.</div></div>
+      </div>
+
       <!-- RELATÓRIOS TAB -->
       <div class="adm-tab" id="adm-tab-relatorios">
         <div class="adm-tab-header">
@@ -747,6 +789,24 @@ select.form-input{cursor:pointer;}
 </div>
 
 </div>
+
+<!-- AVISOS DO ERP -->
+<div class="screen" id="screen-avisos">
+  <div class="topbar">
+    <div class="topbar-left"><h2>📢 Avisos</h2><p>Comunicados do ERP</p></div>
+    <button class="icon-btn" onclick="backFromAvisos()">← Voltar</button>
+  </div>
+  <div class="content">
+    <div class="cat-chips" style="margin-bottom:14px;" id="avisos-filter-chips">
+      <button class="cat-chip active" onclick="setAvisosFilter('todos',this)">Todos</button>
+      <button class="cat-chip" onclick="setAvisosFilter('alta',this)" style="color:#dc2626;">Alta</button>
+      <button class="cat-chip" onclick="setAvisosFilter('media',this)" style="color:#b45309;">Média</button>
+      <button class="cat-chip" onclick="setAvisosFilter('baixa',this)">Baixa</button>
+    </div>
+    <div id="avisos-list"><div class="empty">Carregando...</div></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <div class="lightbox-close">×</div>
@@ -758,6 +818,7 @@ select.form-input{cursor:pointer;}
 const SUPABASE_URL = 'https://paigomvxdlhrhbjclqfe.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_kU6oPX460pXcSYU3e16QZg_0aZoH974';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const ERP_API = 'https://fire-house-erp.vercel.app';
 
 const SETORES = {
   cozinha: ['Produção','Chapa','Fritadeira','Montagem','Despacho','Sobremesas','Louça'],
@@ -774,6 +835,9 @@ let todayRegistros = [];
 let extraTasks = [];
 let adminPass = '1234';
 let turnoAtivo = null; // turno operacional atual
+let erpAvisos = [];
+let avisosFilter = 'todos';
+let avisosFrom = 'checklist';
 
 // Data operacional: se for antes das 06h, pertence ao dia anterior
 function dataOperacional(){
@@ -837,13 +901,15 @@ async function doAdminLogin(){
   await loadDashboard();
 }
 
-function openChecklist(){
+async function openChecklist(){
   document.getElementById('ck-date').textContent = fmtDate(todayStr());
   document.getElementById('ck-user').textContent = currentUser.nome+' · '+currentUser.cargo;
   currentSetor='cozinha'; currentCat='Todos';
   renderTurnoBanner();
   setSetor('cozinha');
   show('screen-checklist');
+  await fetchErpAvisos();
+  renderAvisoBanner();
 }
 
 function renderTurnoBanner(){
@@ -1102,6 +1168,7 @@ function admTab(tab, btn){
     document.getElementById('rel-dia-picker').value = today;
     loadRelDia();
   }
+  if(tab==='avisos') loadAdmAvisos();
 }
 
 function syncCatOptions(){
@@ -1272,7 +1339,8 @@ async function addUser(){
   const cargo=document.getElementById('nu-cargo').value;
   const err=document.getElementById('user-err');
   if(!nome||!usuario||!senha){err.textContent='Preencha todos os campos.';return;}
-  const {error}=await sb.from('checklist_usuarios').insert({nome,usuario,senha,cargo});
+  const setor=document.getElementById('nu-setor')?.value||'todos';
+  const {error}=await sb.from('checklist_usuarios').insert({nome,usuario,senha,cargo,setor});
   if(error){err.textContent=error.message;return;}
   err.textContent='';
   ['nu-nome','nu-user','nu-pass'].forEach(id=>document.getElementById(id).value='');
@@ -1642,6 +1710,115 @@ function renderHistorico(){
   if(!html) html = '<div class="empty">Nenhum registro para este dia.</div>';
   document.getElementById('hist-body').innerHTML = html;
 }
+
+// ─── ERP AVISOS ───────────────────────────────────────────────────────────────
+function prioBg(p){ return p==='alta'?'rgba(220,38,38,0.15)':p==='media'?'rgba(180,83,9,0.13)':'rgba(107,114,128,0.12)'; }
+function prioColor(p){ return p==='alta'?'#dc2626':p==='media'?'#b45309':'#6b7280'; }
+function prioLabel(p){ return p==='alta'?'Alta':p==='media'?'Média':'Baixa'; }
+function fmtDateBR(iso){ if(!iso) return ''; const[y,m,d]=iso.slice(0,10).split('-'); return `${d}/${m}/${y}`; }
+
+async function fetchErpAvisos(){
+  try {
+    const setor = (currentUser?.setor) || 'todos';
+    const url = setor && setor !== 'todos'
+      ? `${ERP_API}/api/mural/publico?destinatario=${setor}`
+      : `${ERP_API}/api/mural/publico`;
+    const res = await fetch(url);
+    if(!res.ok) return;
+    const data = await res.json();
+    erpAvisos = data.avisos || [];
+    // update bell badge
+    const badge = document.getElementById('bell-badge');
+    if(badge){
+      if(erpAvisos.length > 0){
+        badge.textContent = erpAvisos.length > 9 ? '9+' : String(erpAvisos.length);
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  } catch(e){ erpAvisos = []; }
+}
+
+function renderAvisoBanner(){
+  const el = document.getElementById('aviso-banner');
+  if(!el) return;
+  if(!erpAvisos.length){ el.innerHTML = ''; return; }
+  const top = erpAvisos[0];
+  const rest = erpAvisos.length - 1;
+  const pinHtml = top.fixado ? '<span class="aviso-banner-pin">📌</span>' : '';
+  el.innerHTML = `
+    <div class="aviso-banner-card prio-${top.priority}" onclick="viewAvisos()">
+      <div class="aviso-banner-title">${pinHtml}${top.title}</div>
+      <div class="aviso-banner-sub">${top.content.slice(0,80)}${top.content.length>80?'…':''}</div>
+    </div>
+    ${rest > 0 ? `<div class="aviso-banner-more" onclick="viewAvisos()">+ ${rest} aviso${rest!==1?'s':''} — ver todos</div>` : ''}
+  `;
+}
+
+function renderAvisosList(){
+  const el = document.getElementById('avisos-list');
+  if(!el) return;
+  const list = avisosFilter === 'todos' ? erpAvisos : erpAvisos.filter(a => a.priority === avisosFilter);
+  if(!list.length){ el.innerHTML = '<div class="empty">Nenhum aviso no momento.</div>'; return; }
+  el.innerHTML = list.map(a => `
+    <div class="aviso-card prio-${a.priority}">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+        ${a.fixado ? '<span style="font-size:10px;font-weight:700;color:var(--amber);">📌 Fixado</span>' : ''}
+        <span class="aviso-prio-chip" style="background:${prioBg(a.priority)};color:${prioColor(a.priority)};">${prioLabel(a.priority)}</span>
+        <span style="font-size:13px;font-weight:600;">${a.title}</span>
+      </div>
+      <p style="font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;">${a.content}</p>
+      <div style="font-size:11px;color:var(--text2);margin-top:8px;">
+        ${a.author ? a.author + ' · ' : ''}${fmtDateBR(a.createdAt || a.created_at)}
+        ${a.expiraEm || a.expira_em ? ' · Expira em ' + fmtDateBR(a.expiraEm || a.expira_em) : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function viewAvisos(){
+  avisosFrom = isAdmin ? 'admin' : 'checklist';
+  avisosFilter = 'todos';
+  document.querySelectorAll('#avisos-filter-chips .cat-chip').forEach((c,i)=>{ c.classList.toggle('active', i===0); });
+  show('screen-avisos');
+  renderAvisosList();
+}
+
+function backFromAvisos(){
+  if(avisosFrom === 'admin') show('screen-admin');
+  else { show('screen-checklist'); renderChecklist(); }
+}
+
+function setAvisosFilter(f, btn){
+  avisosFilter = f;
+  document.querySelectorAll('#avisos-filter-chips .cat-chip').forEach(c=>c.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderAvisosList();
+}
+
+async function loadAdmAvisos(){
+  const el = document.getElementById('adm-avisos-content');
+  if(!el) return;
+  el.innerHTML = '<div class="dash-loading">Buscando avisos do ERP...</div>';
+  await fetchErpAvisos();
+  if(!erpAvisos.length){ el.innerHTML = '<div class="empty">Nenhum aviso ativo no ERP.</div>'; return; }
+  el.innerHTML = erpAvisos.map(a => `
+    <div class="adm-card" style="margin-bottom:14px;border-left:4px solid ${prioColor(a.priority)};">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        ${a.fixado ? '<span style="font-size:11px;font-weight:700;color:var(--amber);">📌 Fixado</span>' : ''}
+        <span class="aviso-prio-chip" style="background:${prioBg(a.priority)};color:${prioColor(a.priority)};">${prioLabel(a.priority)}</span>
+        <span style="font-size:14px;font-weight:600;">${a.title}</span>
+      </div>
+      <p style="font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;">${a.content}</p>
+      <div style="font-size:11px;color:var(--text2);margin-top:10px;">
+        ${a.author ? a.author + ' · ' : ''}${fmtDateBR(a.createdAt || a.created_at)}
+        ${a.expiraEm || a.expira_em ? ' · Expira em ' + fmtDateBR(a.expiraEm || a.expira_em) : ''}
+      </div>
+    </div>
+  `).join('');
+}
+// ─── END ERP AVISOS ───────────────────────────────────────────────────────────
 
 init();
 </script>
